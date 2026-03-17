@@ -25,8 +25,13 @@ export async function handleGroupsUpsert(groups: GroupUpsert[], sock: WASocket) 
       (authorLid && await isAdminLid(authorLid, group, config.adminPhone))
     )
 
+    const addedByItself = !authorLid && !authorPn
+
     if (addedByAdmin) {
       logger.info({ groupJid: group.id, name: group.subject, author: authorPn || authorLid }, 'Bot added to group by admin — staying')
+      upsertGroupFromMetadata(group, botJid, sock.user?.lid)
+    } else if (addedByItself) {
+      logger.info({ groupJid: group.id, name: group.subject }, 'Bot added to group by itself — staying')
       upsertGroupFromMetadata(group, botJid, sock.user?.lid)
     } else {
       logger.warn({ groupJid: group.id, name: group.subject, author: authorPn || authorLid }, 'Bot added to group by non-admin — leaving')
