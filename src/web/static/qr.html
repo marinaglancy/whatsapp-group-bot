@@ -26,6 +26,9 @@
     #bot-name { color: #1a1a1a; font-weight: bold; margin: 0.25rem 0; }
     #bot-phone { color: #667781; margin: 0.25rem 0; }
     #qr-img { margin: 1rem 0; }
+    #disconnect { display: none; margin-top: 1rem; }
+    #disconnect a { color: #e74c3c; font-size: 0.85rem; cursor: pointer; text-decoration: none; }
+    #disconnect a:hover { text-decoration: underline; }
     .connected { color: #25d366 !important; font-weight: bold; }
     .waiting { color: #667781; }
     .reconnecting { color: #e67e22; }
@@ -39,12 +42,14 @@
     <p id="bot-name"></p>
     <p id="bot-phone"></p>
     <div id="qr-img"></div>
+    <div id="disconnect"><a href="#" onclick="disconnect(event)">Disconnect</a></div>
   </div>
   <script>
     const statusEl = document.getElementById('status');
     const nameEl = document.getElementById('bot-name');
     const phoneEl = document.getElementById('bot-phone');
     const qrEl = document.getElementById('qr-img');
+    const disconnectEl = document.getElementById('disconnect');
 
     async function poll() {
       try {
@@ -55,11 +60,14 @@
         phoneEl.textContent = '';
         qrEl.innerHTML = '';
 
+        disconnectEl.style.display = 'none';
+
         if (data.state === 'open') {
           statusEl.textContent = 'Connected!';
           statusEl.className = 'connected';
           nameEl.textContent = data.user?.name || '';
           phoneEl.textContent = data.user?.phone ? '+' + data.user.phone : '';
+          disconnectEl.style.display = 'block';
         } else if (data.qr) {
           statusEl.textContent = 'Scan this QR code with WhatsApp';
           statusEl.className = 'waiting';
@@ -75,6 +83,13 @@
         statusEl.textContent = 'Error connecting to server';
         statusEl.className = 'error';
       }
+    }
+
+    async function disconnect(e) {
+      e.preventDefault();
+      if (!confirm('Disconnect this device?')) return;
+      await fetch('/api/logout', { method: 'POST' });
+      poll();
     }
 
     poll();

@@ -1,6 +1,7 @@
 import type { FastifyInstance } from 'fastify'
 import QRCode from 'qrcode'
 import { getCurrentQr, getConnectionState, getBotUser } from '../../whatsapp/handlers/connection.js'
+import { getSock } from '../../whatsapp/client.js'
 
 export function registerQrRoutes(app: FastifyInstance) {
   app.get('/api/qr', async (_req, reply) => {
@@ -18,6 +19,16 @@ export function registerQrRoutes(app: FastifyInstance) {
       state: state ?? 'connecting',
       user,
     })
+  })
+
+  app.post('/api/logout', async (_req, reply) => {
+    try {
+      const sock = getSock()
+      await sock.logout('User requested logout from dashboard')
+      return reply.send({ ok: true })
+    } catch {
+      return reply.status(500).send({ ok: false, error: 'Not connected' })
+    }
   })
 
   app.get('/qr', async (_req, reply) => {
