@@ -10,7 +10,7 @@ export const config = {
   port: parseInt(process.env.PORT || '3000', 10),
   host: process.env.HOST || '0.0.0.0',
   logLevel: (process.env.LOG_LEVEL || 'info') as 'debug' | 'info' | 'warn' | 'error',
-  botName: process.env.BOT_NAME || 'WhatsApp Group Bot',
+  projectName: process.env.PROJECT_NAME || 'WhatsApp Group Bot',
   adminPhone: process.env.ADMIN_PHONE || '',
   adminUsername: process.env.ADMIN_USERNAME || 'admin',
   adminPassword: process.env.ADMIN_PASSWORD || '',

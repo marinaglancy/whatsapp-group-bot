@@ -18,7 +18,7 @@ const staticDir = resolve(__dirname, 'static')
 /** Serve an HTML file with {{BOT_NAME}} replaced by the configured bot name. */
 export function sendPage(reply: FastifyReply, filename: string) {
   const html = readFileSync(resolve(staticDir, filename), 'utf-8')
-    .replaceAll('{{BOT_NAME}}', config.botName)
+    .replaceAll('{{PROJECT_NAME}}', config.projectName)
     .replaceAll('{{ADMIN_USERNAME}}', config.adminUsername)
   return reply.type('text/html').send(html)
 }
