@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm'
+import { eq, notInArray } from 'drizzle-orm'
 import type { GroupMetadata, GroupParticipant } from 'baileys'
 import { getDb } from '../index.js'
 import { groups, type Group } from '../schema.js'
@@ -65,4 +65,17 @@ export function getGroup(jid: string) {
 export function getAllGroups() {
   const db = getDb()
   return db.select().from(groups).all()
+}
+
+/** Mark groups not in the active set as bot_membership='none' */
+export function markAbsentGroupsAsNone(activeJids: string[]) {
+  const db = getDb()
+  if (activeJids.length === 0) {
+    // No active groups — mark all as none
+    return db.update(groups).set({ botMembership: 'none' }).run()
+  }
+  return db.update(groups)
+    .set({ botMembership: 'none' })
+    .where(notInArray(groups.jid, activeJids))
+    .run()
 }

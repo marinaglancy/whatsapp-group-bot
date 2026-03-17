@@ -1,6 +1,7 @@
 import type { WASocket } from 'baileys'
 import { handleConnectionUpdate, updateBotUser } from './handlers/connection.js'
 import { handleGroupParticipantsUpdate } from './handlers/group-participants.js'
+import { handleGroupsUpsert } from './handlers/group-join.js'
 import { syncGroups } from './handlers/group-sync.js'
 import { logger } from '../utils/logger.js'
 
@@ -27,6 +28,10 @@ export function setupEventHandlers(sock: WASocket, saveCreds: () => Promise<void
           logger.debug({ from: msg.key.remoteJid }, 'New message')
         }
       }
+    }
+
+    if (events['groups.upsert']) {
+      await handleGroupsUpsert(events['groups.upsert'], sock)
     }
 
     if (events['group-participants.update']) {

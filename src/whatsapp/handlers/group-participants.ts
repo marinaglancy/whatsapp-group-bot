@@ -12,7 +12,11 @@ export async function handleGroupParticipantsUpdate(event: ParticipantsUpdate, s
   if (!botJid) return
 
   const botPhone = phoneFromJid(botJid)
-  const isBotAffected = participants.some(p => phoneFromJid(p.id) === botPhone)
+  const botLidBare = sock.user?.lid?.split(':')[0].split('@')[0]
+  const isBotAffected = participants.some(p => {
+    const pid = p.id.split(':')[0].split('@')[0]
+    return pid === botPhone || (botLidBare && pid === botLidBare)
+  })
 
   if (!isBotAffected) {
     logger.debug({ groupJid, action, participants }, 'Group participants update (not bot)')
