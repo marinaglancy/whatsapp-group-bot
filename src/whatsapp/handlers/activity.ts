@@ -75,9 +75,9 @@ export function handleMessagesUpsert(event: BaileysEventMap['messages.upsert']) 
         toUserJid = botJid
       }
       if (!userJid) continue
-      // Ensure the DM user exists in users table
-      upsertUser(remoteJid, {
-        displayName: msg.pushName || undefined,
+      // Ensure the DM user exists in users table (only set name from incoming messages)
+      upsertUser(jidNormalizedUser(remoteJid), {
+        displayName: !msg.key.fromMe ? (msg.pushName || undefined) : undefined,
       })
     }
 
@@ -88,8 +88,8 @@ export function handleMessagesUpsert(event: BaileysEventMap['messages.upsert']) 
     // Cache message for poll vote decryption
     cacheMessage(msg)
 
-    // Update display name from pushName
-    if (msg.pushName && userJid) {
+    // Update display name from pushName (skip bot's own messages)
+    if (msg.pushName && userJid && !msg.key.fromMe) {
       updateDisplayName(userJid, msg.pushName)
     }
 
