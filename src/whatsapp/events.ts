@@ -4,8 +4,9 @@ import { handleGroupParticipantsUpdate } from './handlers/group-participants.js'
 import { handleGroupsUpsert } from './handlers/group-join.js'
 import { handleGroupJoinRequest } from './handlers/group-join-request.js'
 import { handleContactsUpsert, handleContactsUpdate } from './handlers/contacts.js'
+import { handleMessagesUpsert } from './handlers/activity.js'
+import { handleMessagesReaction } from './handlers/activity-reactions.js'
 import { syncGroups } from './handlers/group-sync.js'
-import { updateDisplayName } from '../db/queries/users.js'
 import { logger } from '../utils/logger.js'
 
 export function setupEventHandlers(sock: WASocket, saveCreds: () => Promise<void>) {
@@ -25,16 +26,11 @@ export function setupEventHandlers(sock: WASocket, saveCreds: () => Promise<void
     }
 
     if (events['messages.upsert']) {
-      const { messages, type } = events['messages.upsert']
-      if (type === 'notify') {
-        for (const msg of messages) {
-          logger.debug({ from: msg.key.remoteJid }, 'New message')
-          // Extract display name from pushName
-          if (msg.pushName && msg.key.participant) {
-            updateDisplayName(msg.key.participant, msg.pushName)
-          }
-        }
-      }
+      handleMessagesUpsert(events['messages.upsert'])
+    }
+
+    if (events['messages.reaction']) {
+      handleMessagesReaction(events['messages.reaction'])
     }
 
     if (events['groups.upsert']) {

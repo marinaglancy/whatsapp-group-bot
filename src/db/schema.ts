@@ -57,3 +57,25 @@ export const groupMembers = sqliteTable('group_members', {
 ])
 
 export type GroupMember = typeof groupMembers.$inferSelect
+
+export const activityEventTypes = [
+  'message', 'reaction', 'edit', 'delete',
+  'poll_create', 'poll_vote',
+  'event_create', 'event_response',
+] as const
+export type ActivityEventType = typeof activityEventTypes[number]
+
+export const activityLog = sqliteTable('activity_log', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  groupJid: text('group_jid').notNull(),
+  userJid: text('user_jid').notNull(),
+  messageId: text('message_id').notNull(),
+  parentId: text('parent_id'),
+  eventType: text('event_type', { enum: activityEventTypes }).notNull(),
+  metadata: text('metadata', { mode: 'json' }).$type<Record<string, unknown>>(),
+  raw: text('raw', { mode: 'json' }).$type<Record<string, unknown>>(),
+  timestamp: integer('timestamp').notNull(),
+  createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull().$defaultFn(() => new Date()),
+})
+
+export type ActivityLog = typeof activityLog.$inferSelect

@@ -58,6 +58,23 @@ export function initDb() {
     );
 
     CREATE INDEX IF NOT EXISTS idx_group_members_user ON group_members(user_jid);
+
+    CREATE TABLE IF NOT EXISTS activity_log (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      group_jid TEXT NOT NULL,
+      user_jid TEXT NOT NULL,
+      message_id TEXT NOT NULL,
+      parent_id TEXT,
+      event_type TEXT NOT NULL,
+      metadata TEXT,
+      raw TEXT,
+      timestamp INTEGER NOT NULL,
+      created_at INTEGER NOT NULL
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_activity_group_ts ON activity_log(group_jid, timestamp);
+    CREATE INDEX IF NOT EXISTS idx_activity_group_user ON activity_log(group_jid, user_jid);
+    CREATE INDEX IF NOT EXISTS idx_activity_message ON activity_log(message_id);
   `)
 
   logger.info({ path: dbPath }, 'Database initialized')

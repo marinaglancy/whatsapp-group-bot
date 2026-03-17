@@ -28,6 +28,10 @@ export function cacheMessage(msg: WAMessage) {
   if (id) msgCache.set(id, msg)
 }
 
+export function getCachedMessage(id: string): WAMessage | undefined {
+  return msgCache.get(id)
+}
+
 async function getMessage(key: WAMessageKey) {
   if (key.id) return msgCache.get(key.id)?.message ?? undefined
   return undefined
