@@ -1,6 +1,7 @@
 import { mkdirSync } from 'fs'
 import { config } from './config.js'
 import { logger } from './utils/logger.js'
+import { initDb } from './db/index.js'
 import { startConnection } from './whatsapp/client.js'
 import { startWebServer } from './web/server.js'
 
@@ -9,6 +10,9 @@ async function main() {
   mkdirSync(config.authDir, { recursive: true })
 
   logger.info('Starting WhatsApp Group Bot...')
+
+  // Initialize database
+  initDb()
 
   // Start web server first so QR page is available
   await startWebServer()

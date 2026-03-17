@@ -1,11 +1,17 @@
 import type { WASocket } from 'baileys'
 import { handleConnectionUpdate, updateBotUser } from './handlers/connection.js'
+import { handleGroupParticipantsUpdate } from './handlers/group-participants.js'
+import { syncGroups } from './handlers/group-sync.js'
 import { logger } from '../utils/logger.js'
 
 export function setupEventHandlers(sock: WASocket, saveCreds: () => Promise<void>) {
   sock.ev.process(async (events) => {
     if (events['connection.update']) {
       handleConnectionUpdate(events['connection.update'], sock.user)
+
+      if (events['connection.update'].connection === 'open') {
+        syncGroups(sock)
+      }
     }
 
     if (events['creds.update']) {
@@ -24,8 +30,7 @@ export function setupEventHandlers(sock: WASocket, saveCreds: () => Promise<void
     }
 
     if (events['group-participants.update']) {
-      const event = events['group-participants.update']
-      logger.debug({ group: event.id, action: event.action }, 'Group participants update')
+      await handleGroupParticipantsUpdate(events['group-participants.update'], sock)
     }
   })
 }

@@ -1,0 +1,31 @@
+import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core'
+
+/** Bitmask constants for bot responsibilities in a group */
+export const BotFunction = {
+  MONITOR_ACTIVITY: 1,
+  APPROVE_MEMBERS: 2,
+  DELETE_SPAM: 4,
+  WELCOME: 8,
+  REPORTS: 16,
+} as const
+
+export const groups = sqliteTable('groups', {
+  jid: text('jid').primaryKey(),
+  name: text('name').notNull(),
+  isCommunity: integer('is_community', { mode: 'boolean' }).notNull().default(false),
+  parentCommunityJid: text('parent_community_jid'),
+  permissions: text('permissions', { mode: 'json' }).$type<{
+    announce?: boolean
+    restrict?: boolean
+    memberAddMode?: boolean
+    joinApprovalMode?: boolean
+  }>(),
+  botMembership: text('bot_membership', { enum: ['none', 'participant', 'admin', 'superadmin'] }).notNull().default('none'),
+  botFunctions: integer('bot_functions').notNull().default(0),
+  isArchived: integer('is_archived', { mode: 'boolean' }).notNull().default(false),
+  syncedAt: integer('synced_at', { mode: 'timestamp_ms' }),
+  createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull().$defaultFn(() => new Date()),
+})
+
+export type Group = typeof groups.$inferSelect
+export type NewGroup = typeof groups.$inferInsert
