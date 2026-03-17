@@ -1,15 +1,15 @@
-import type { BaileysEventMap } from 'baileys'
+import { type BaileysEventMap, jidNormalizedUser } from 'baileys'
 import { logger } from '../../utils/logger.js'
 import { isGroupJid } from '../../utils/jid.js'
 import { logActivity } from '../../db/queries/activity.js'
+import { getSock } from '../client.js'
 
 export function handleMessagesReaction(reactions: BaileysEventMap['messages.reaction']) {
   for (const { key, reaction } of reactions) {
-    const groupJid = key.remoteJid
-    if (!groupJid || !isGroupJid(groupJid)) continue
+    const remoteJid = key.remoteJid
+    if (!remoteJid) continue
 
-    const userJid = reaction.key?.participant
-    if (!userJid) continue
+    const isGroup = isGroupJid(remoteJid)
 
     const messageId = reaction.key?.id
     if (!messageId) continue
@@ -17,12 +17,32 @@ export function handleMessagesReaction(reactions: BaileysEventMap['messages.reac
     const targetMsgId = key.id
     if (!targetMsgId) continue
 
+    let userJid: string
+    let groupJid: string | null = null
+    let toUserJid: string | null = null
+
+    if (isGroup) {
+      if (!reaction.key?.participant) continue
+      userJid = jidNormalizedUser(reaction.key.participant)
+      groupJid = remoteJid
+    } else {
+      const botJid = jidNormalizedUser(getSock().user?.lid || getSock().user?.id || '')
+      if (reaction.key?.fromMe) {
+        userJid = botJid
+        toUserJid = jidNormalizedUser(remoteJid)
+      } else {
+        userJid = jidNormalizedUser(remoteJid)
+        toUserJid = botJid
+      }
+    }
+
     const timestamp = typeof reaction.senderTimestampMs === 'number'
       ? Math.floor(reaction.senderTimestampMs / 1000)
       : Math.floor(Date.now() / 1000)
 
     logActivity({
       groupJid,
+      toUserJid,
       userJid,
       messageId,
       parentId: targetMsgId,

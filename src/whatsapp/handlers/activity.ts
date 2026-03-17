@@ -3,7 +3,7 @@ import { createHash } from 'crypto'
 import { logger } from '../../utils/logger.js'
 import { isGroupJid } from '../../utils/jid.js'
 import { logActivity } from '../../db/queries/activity.js'
-import { updateDisplayName } from '../../db/queries/users.js'
+import { updateDisplayName, upsertUser } from '../../db/queries/users.js'
 import { cacheMessage, getCachedMessage, getSock } from '../client.js'
 
 /** Convert a message to a JSON-safe object for debug logging.
@@ -45,14 +45,41 @@ export function handleMessagesUpsert(event: BaileysEventMap['messages.upsert']) 
   if (type !== 'notify') return
 
   for (const msg of messages) {
-    const groupJid = msg.key.remoteJid
-    if (!groupJid || !isGroupJid(groupJid)) continue
-
-    const userJid = msg.key.participant
-    if (!userJid) continue
+    const remoteJid = msg.key.remoteJid
+    if (!remoteJid) continue
 
     const messageId = msg.key.id
     if (!messageId) continue
+
+    const isGroup = isGroupJid(remoteJid)
+
+    // For groups: sender is participant. For DMs: sender is remoteJid (or bot if fromMe)
+    let userJid: string
+    let groupJid: string | null = null
+    let toUserJid: string | null = null
+
+    if (isGroup) {
+      if (!msg.key.participant) continue
+      userJid = jidNormalizedUser(msg.key.participant)
+      groupJid = remoteJid
+    } else {
+      // DM: remoteJid is the other user
+      const botJid = jidNormalizedUser(getSock().user?.lid || getSock().user?.id || '')
+      if (msg.key.fromMe) {
+        // Bot sent the message
+        userJid = botJid
+        toUserJid = jidNormalizedUser(remoteJid)
+      } else {
+        // Other user sent the message
+        userJid = jidNormalizedUser(remoteJid)
+        toUserJid = botJid
+      }
+      if (!userJid) continue
+      // Ensure the DM user exists in users table
+      upsertUser(remoteJid, {
+        displayName: msg.pushName || undefined,
+      })
+    }
 
     const timestamp = typeof msg.messageTimestamp === 'number'
       ? msg.messageTimestamp
@@ -62,7 +89,7 @@ export function handleMessagesUpsert(event: BaileysEventMap['messages.upsert']) 
     cacheMessage(msg)
 
     // Update display name from pushName
-    if (msg.pushName) {
+    if (msg.pushName && userJid) {
       updateDisplayName(userJid, msg.pushName)
     }
 
@@ -86,7 +113,7 @@ export function handleMessagesUpsert(event: BaileysEventMap['messages.upsert']) 
           : 'unknown'
         const editedText = editedMessage ? extractText(editedMessage) : null
         logActivity({
-          groupJid, userJid, messageId,
+          groupJid, toUserJid, userJid, messageId,
           parentId: proto_msg.key.id,
           eventType: 'edit',
           metadata: { contentType: editedContentType, ...(editedText ? { text: editedText } : {}) },
@@ -96,7 +123,7 @@ export function handleMessagesUpsert(event: BaileysEventMap['messages.upsert']) 
         logger.debug({ groupJid, messageId, parentId: proto_msg.key.id }, 'Activity: edit')
       } else if (protoType === proto.Message.ProtocolMessage.Type.REVOKE && proto_msg.key?.id) {
         logActivity({
-          groupJid, userJid, messageId,
+          groupJid, toUserJid, userJid, messageId,
           parentId: proto_msg.key.id,
           eventType: 'delete',
           raw,
@@ -113,7 +140,7 @@ export function handleMessagesUpsert(event: BaileysEventMap['messages.upsert']) 
       || msg.message?.pollCreationMessageV3
     if (pollMsg) {
       logActivity({
-        groupJid, userJid, messageId,
+        groupJid, toUserJid, userJid, messageId,
         eventType: 'poll_create',
         metadata: {
           question: pollMsg.name || '',
@@ -192,7 +219,7 @@ export function handleMessagesUpsert(event: BaileysEventMap['messages.upsert']) 
         }
 
         logActivity({
-          groupJid, userJid, messageId,
+          groupJid, toUserJid, userJid, messageId,
           parentId: pollMsgId,
           eventType: 'poll_vote',
           metadata: {
@@ -212,7 +239,7 @@ export function handleMessagesUpsert(event: BaileysEventMap['messages.upsert']) 
         const pollMsgId = update.pollUpdateMessageKey?.id
         if (!pollMsgId) continue
         logActivity({
-          groupJid, userJid, messageId,
+          groupJid, toUserJid, userJid, messageId,
           parentId: pollMsgId,
           eventType: 'poll_vote',
           metadata: {
@@ -232,7 +259,7 @@ export function handleMessagesUpsert(event: BaileysEventMap['messages.upsert']) 
     const eventMsg = msg.message?.eventMessage
     if (eventMsg) {
       logActivity({
-        groupJid, userJid, messageId,
+        groupJid, toUserJid, userJid, messageId,
         eventType: 'event_create',
         metadata: {
           name: eventMsg.name || '',
@@ -258,7 +285,7 @@ export function handleMessagesUpsert(event: BaileysEventMap['messages.upsert']) 
         : encType === 1 ? 'EVENT_EDIT'
         : String(encType ?? 'unknown')
       logActivity({
-        groupJid, userJid, messageId,
+        groupJid, toUserJid, userJid, messageId,
         parentId: targetMsgId,
         eventType: 'edit',
         metadata: { contentType: 'event_edit', secretEncType: typeStr, encrypted: true },
@@ -275,7 +302,7 @@ export function handleMessagesUpsert(event: BaileysEventMap['messages.upsert']) 
     if (encEventResp) {
       const eventMsgId = encEventResp.eventCreationMessageKey?.id || null
       logActivity({
-        groupJid, userJid, messageId,
+        groupJid, toUserJid, userJid, messageId,
         parentId: eventMsgId,
         eventType: 'event_response',
         metadata: { encrypted: true },
@@ -297,7 +324,7 @@ export function handleMessagesUpsert(event: BaileysEventMap['messages.upsert']) 
           : responseType === 3 ? 'MAYBE'
           : 'UNKNOWN'
         logActivity({
-          groupJid, userJid, messageId,
+          groupJid, toUserJid, userJid, messageId,
           parentId: eventMsgId,
           eventType: 'event_response',
           metadata: { response: responseStr },
@@ -320,7 +347,7 @@ export function handleMessagesUpsert(event: BaileysEventMap['messages.upsert']) 
         : pinMsg.type === 2 ? 'UNPIN_FOR_ALL'
         : String(pinMsg.type ?? 'unknown')
       logActivity({
-        groupJid, userJid, messageId,
+        groupJid, toUserJid, userJid, messageId,
         parentId: pinnedMsgId,
         eventType: 'message',
         metadata: { contentType: 'pinInChatMessage', pinType },
@@ -338,7 +365,7 @@ export function handleMessagesUpsert(event: BaileysEventMap['messages.upsert']) 
       // Extract reply context — stanzaId is the quoted message's ID
       const quotedId = extractQuotedId(msg.message!)
       logActivity({
-        groupJid, userJid, messageId,
+        groupJid, toUserJid, userJid, messageId,
         parentId: quotedId,
         eventType: 'message',
         metadata: { contentType, ...(text ? { text } : {}), ...(quotedId ? { isReply: true } : {}) },

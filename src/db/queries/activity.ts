@@ -3,8 +3,9 @@ import { getDb } from '../index.js'
 import { activityLog, type ActivityEventType } from '../schema.js'
 
 interface LogActivityEntry {
-  groupJid: string
+  groupJid?: string | null
   userJid: string
+  toUserJid?: string | null
   messageId: string
   parentId?: string | null
   eventType: ActivityEventType
@@ -16,7 +17,8 @@ interface LogActivityEntry {
 export function logActivity(entry: LogActivityEntry) {
   const db = getDb()
   return db.insert(activityLog).values({
-    groupJid: entry.groupJid,
+    groupJid: entry.groupJid ?? null,
+    toUserJid: entry.toUserJid ?? null,
     userJid: entry.userJid,
     messageId: entry.messageId,
     parentId: entry.parentId ?? null,
