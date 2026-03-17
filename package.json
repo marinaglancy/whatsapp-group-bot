@@ -6,8 +6,8 @@
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc",
-    "dev": "tsx src/index.ts",
-    "start": "node dist/index.js"
+    "dev": "tsx --env-file=.env src/index.ts",
+    "start": "node --env-file=.env dist/index.js"
   },
   "keywords": [],
   "author": "",
@@ -20,6 +20,9 @@
     "typescript": "^5.9.3"
   },
   "dependencies": {
+    "@fastify/cookie": "^11.0.2",
+    "@fastify/formbody": "^8.0.2",
+    "@fastify/session": "^11.1.1",
     "@fastify/static": "^9.0.0",
     "baileys": "github:WhiskeySockets/Baileys",
     "fastify": "^5.8.2",

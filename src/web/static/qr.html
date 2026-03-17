@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>WhatsApp Bot - QR Code</title>
+  <title>{{BOT_NAME}}</title>
   <style>
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
@@ -37,12 +37,17 @@
 </head>
 <body>
   <div class="container">
-    <h1>WhatsApp Bot</h1>
+    <h1>{{BOT_NAME}}</h1>
     <p id="status" class="waiting">Loading...</p>
     <p id="bot-name"></p>
     <p id="bot-phone"></p>
     <div id="qr-img"></div>
-    <div id="disconnect"><a href="#" onclick="disconnect(event)">Disconnect</a></div>
+    <div id="disconnect"><a href="#" onclick="disconnect(event)">Disconnect device</a></div>
+    <div style="margin-top: 2rem; padding-top: 1rem; border-top: 1px solid #eee;">
+      <form method="POST" action="/admin/logout" style="display:inline">
+        <button type="submit" style="background:none; border:none; color:#667781; font-size:0.8rem; cursor:pointer; text-decoration:underline;">Log out {{ADMIN_USERNAME}}</button>
+      </form>
+    </div>
   </div>
   <script>
     const statusEl = document.getElementById('status');
@@ -53,7 +58,7 @@
 
     async function poll() {
       try {
-        const res = await fetch('/api/qr');
+        const res = await fetch('/admin/api/qr');
         const data = await res.json();
 
         nameEl.textContent = '';
@@ -88,7 +93,7 @@
     async function disconnect(e) {
       e.preventDefault();
       if (!confirm('Disconnect this device?')) return;
-      await fetch('/api/logout', { method: 'POST' });
+      await fetch('/admin/api/disconnect', { method: 'POST' });
       poll();
     }
 

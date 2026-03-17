@@ -1,23 +1,51 @@
 import Fastify from 'fastify'
+import type { FastifyReply } from 'fastify'
 import fastifyStatic from '@fastify/static'
+import fastifyCookie from '@fastify/cookie'
+import fastifySession from '@fastify/session'
+import fastifyFormbody from '@fastify/formbody'
+import { readFileSync } from 'fs'
 import { resolve } from 'path'
 import { fileURLToPath } from 'url'
 import { dirname } from 'path'
 import { config } from '../config.js'
 import { logger } from '../utils/logger.js'
-import { registerQrRoutes } from './routes/qr.js'
+import { registerAdminRoutes } from './routes/admin.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
+const staticDir = resolve(__dirname, 'static')
+
+/** Serve an HTML file with {{BOT_NAME}} replaced by the configured bot name. */
+export function sendPage(reply: FastifyReply, filename: string) {
+  const html = readFileSync(resolve(staticDir, filename), 'utf-8')
+    .replaceAll('{{BOT_NAME}}', config.botName)
+    .replaceAll('{{ADMIN_USERNAME}}', config.adminUsername)
+  return reply.type('text/html').send(html)
+}
 
 export async function startWebServer() {
   const app = Fastify({ logger: false })
+
+  await app.register(fastifyFormbody)
+  await app.register(fastifyCookie)
+  await app.register(fastifySession, {
+    secret: config.sessionSecret,
+    cookie: {
+      secure: false,
+      httpOnly: true,
+      maxAge: 24 * 60 * 60 * 1000,
+    },
+    cookieName: 'bot_session',
+  })
 
   await app.register(fastifyStatic, {
     root: resolve(__dirname, 'static'),
     prefix: '/',
   })
 
-  registerQrRoutes(app)
+  app.get('/', async (_req, reply) => sendPage(reply, 'index.html'))
+
+  registerAdminRoutes(app)
 
   await app.listen({ port: config.port, host: config.host })
   logger.info(`Web server listening on http://${config.host}:${config.port}`)

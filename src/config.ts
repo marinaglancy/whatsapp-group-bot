@@ -1,5 +1,7 @@
 import { resolve } from 'path'
 
+import crypto from 'crypto'
+
 export const config = {
   dataDir: process.env.DATA_DIR || resolve('data'),
   get authDir() {
@@ -8,5 +10,9 @@ export const config = {
   port: parseInt(process.env.PORT || '3000', 10),
   host: process.env.HOST || '0.0.0.0',
   logLevel: (process.env.LOG_LEVEL || 'info') as 'debug' | 'info' | 'warn' | 'error',
+  botName: process.env.BOT_NAME || 'WhatsApp Group Bot',
   adminPhone: process.env.ADMIN_PHONE || '',
+  adminUsername: process.env.ADMIN_USERNAME || 'admin',
+  adminPassword: process.env.ADMIN_PASSWORD || '',
+  sessionSecret: process.env.SESSION_SECRET || crypto.randomBytes(32).toString('hex'),
 }
