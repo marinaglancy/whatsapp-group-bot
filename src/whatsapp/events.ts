@@ -1,5 +1,5 @@
 import type { WASocket } from 'baileys'
-import { handleConnectionUpdate } from './handlers/connection.js'
+import { handleConnectionUpdate, updateBotUser } from './handlers/connection.js'
 import { logger } from '../utils/logger.js'
 
 export function setupEventHandlers(sock: WASocket, saveCreds: () => Promise<void>) {
@@ -10,6 +10,7 @@ export function setupEventHandlers(sock: WASocket, saveCreds: () => Promise<void
 
     if (events['creds.update']) {
       await saveCreds()
+      updateBotUser(events['creds.update'].me)
       logger.debug('Credentials saved')
     }
 

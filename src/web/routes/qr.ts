@@ -5,19 +5,19 @@ import { getCurrentQr, getConnectionState, getBotUser } from '../../whatsapp/han
 export function registerQrRoutes(app: FastifyInstance) {
   app.get('/api/qr', async (_req, reply) => {
     const qr = getCurrentQr()
-    const connected = getConnectionState() === 'open'
-    const user = connected ? getBotUser() : null
+    const state = getConnectionState()
+    const user = state === 'open' ? getBotUser() : null
 
-    if (connected) {
-      return reply.send({ qr: null, connected: true, user })
+    let qrDataUrl: string | null = null
+    if (qr) {
+      qrDataUrl = await QRCode.toDataURL(qr, { width: 300 })
     }
 
-    if (!qr) {
-      return reply.send({ qr: null, connected: false, user: null })
-    }
-
-    const dataUrl = await QRCode.toDataURL(qr, { width: 300 })
-    return reply.send({ qr: dataUrl, connected: false, user: null })
+    return reply.send({
+      qr: qrDataUrl,
+      state: state ?? 'connecting',
+      user,
+    })
   })
 
   app.get('/qr', async (_req, reply) => {

@@ -7,8 +7,10 @@ import makeWASocket, {
   type WAMessageKey,
 } from 'baileys'
 import { Boom } from '@hapi/boom'
+import { rmSync } from 'fs'
 import { LRUCache } from 'lru-cache'
 import { initAuthState } from './auth.js'
+import { config } from '../config.js'
 import { logger } from '../utils/logger.js'
 import { setupEventHandlers } from './events.js'
 
@@ -58,7 +60,9 @@ export async function startConnection(): Promise<void> {
         logger.info('Connection closed, reconnecting...')
         await startConnection()
       } else {
-        logger.fatal('Logged out. Delete auth directory and re-scan QR code.')
+        logger.warn('Logged out. Clearing auth state and waiting for new QR scan...')
+        rmSync(config.authDir, { recursive: true, force: true })
+        await startConnection()
       }
     }
   })

@@ -18,6 +18,14 @@ export function getBotUser() {
   return botUser
 }
 
+export function updateBotUser(user: Contact | undefined) {
+  if (!user) return
+  botUser = {
+    name: user.name || user.notify || botUser?.name || '',
+    phone: user.id ? phoneFromJid(user.id) : botUser?.phone || '',
+  }
+}
+
 export function handleConnectionUpdate(update: Partial<ConnectionState>, user?: Contact | undefined) {
   const { connection, qr } = update
 
@@ -30,16 +38,10 @@ export function handleConnectionUpdate(update: Partial<ConnectionState>, user?: 
     connectionState = connection
     if (connection === 'open') {
       currentQr = null
-      if (user) {
-        botUser = {
-          name: user.name || user.notify || '',
-          phone: user.id ? phoneFromJid(user.id) : '',
-        }
-        logger.info({ name: botUser.name, phone: botUser.phone }, 'WhatsApp connection established')
-      } else {
-        logger.info('WhatsApp connection established')
-      }
+      updateBotUser(user)
+      logger.info({ name: botUser?.name, phone: botUser?.phone }, 'WhatsApp connection established')
     } else if (connection === 'close') {
+      botUser = null
       logger.warn('WhatsApp connection closed')
     }
   }
