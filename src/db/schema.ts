@@ -1,4 +1,4 @@
-import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core'
+import { sqliteTable, text, integer, primaryKey } from 'drizzle-orm/sqlite-core'
 
 /** Bitmask constants for bot responsibilities in a group */
 export const BotFunction = {
@@ -29,3 +29,31 @@ export const groups = sqliteTable('groups', {
 
 export type Group = typeof groups.$inferSelect
 export type NewGroup = typeof groups.$inferInsert
+
+export const membershipLevels = ['none', 'pending_approval', 'participant', 'admin', 'superadmin'] as const
+export type MembershipLevel = typeof membershipLevels[number]
+
+export const users = sqliteTable('users', {
+  jid: text('jid').primaryKey(),
+  phoneNumber: text('phone_number'),
+  isBanned: integer('is_banned', { mode: 'boolean' }).notNull().default(false),
+  displayName: text('display_name'),
+  displayNameUpdatedAt: integer('display_name_updated_at', { mode: 'timestamp_ms' }),
+  createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull().$defaultFn(() => new Date()),
+  updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull().$defaultFn(() => new Date()),
+})
+
+export type User = typeof users.$inferSelect
+
+export const groupMembers = sqliteTable('group_members', {
+  groupJid: text('group_jid').notNull().references(() => groups.jid),
+  userJid: text('user_jid').notNull().references(() => users.jid),
+  membership: text('membership', { enum: membershipLevels }).notNull().default('participant'),
+  joinedAt: integer('joined_at', { mode: 'timestamp_ms' }),
+  leftAt: integer('left_at', { mode: 'timestamp_ms' }),
+  updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull().$defaultFn(() => new Date()),
+}, (table) => [
+  primaryKey({ columns: [table.groupJid, table.userJid] }),
+])
+
+export type GroupMember = typeof groupMembers.$inferSelect

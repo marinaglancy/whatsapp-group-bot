@@ -1,6 +1,7 @@
 import type { WASocket } from 'baileys'
 import { logger } from '../../utils/logger.js'
 import { upsertGroupFromMetadata, markAbsentGroupsAsNone } from '../../db/queries/groups.js'
+import { syncGroupParticipants } from '../../db/queries/members.js'
 
 export async function syncGroups(sock: WASocket) {
   const botJid = sock.user?.id
@@ -16,6 +17,7 @@ export async function syncGroups(sock: WASocket) {
     const activeJids: string[] = []
     for (const meta of groupList) {
       upsertGroupFromMetadata(meta, botJid, botLid)
+      syncGroupParticipants(meta.id, meta.participants, botJid, botLid)
       activeJids.push(meta.id)
     }
 

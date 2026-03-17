@@ -25,3 +25,11 @@ export function jidMatchesPhone(jid: string, phone: string): boolean {
 export function isGroupJid(jid: string): boolean {
   return jid.endsWith('@g.us')
 }
+
+/** Strip device suffix and domain from a JID/LID for comparison.
+ * e.g. "209375931187402:14@lid" -> "209375931187402"
+ * e.g. "351920823473@s.whatsapp.net" -> "351920823473"
+ */
+export function bareJid(jid: string): string {
+  return jid.split(':')[0].split('@')[0]
+}

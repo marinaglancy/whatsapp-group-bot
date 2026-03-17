@@ -2,7 +2,7 @@ import { eq, notInArray } from 'drizzle-orm'
 import type { GroupMetadata, GroupParticipant } from 'baileys'
 import { getDb } from '../index.js'
 import { groups, type Group } from '../schema.js'
-import { phoneFromJid } from '../../utils/jid.js'
+import { bareJid } from '../../utils/jid.js'
 
 function botMembershipFromParticipant(p: GroupParticipant | undefined): Group['botMembership'] {
   if (!p) return 'none'
@@ -11,17 +11,12 @@ function botMembershipFromParticipant(p: GroupParticipant | undefined): Group['b
   return 'participant'
 }
 
-/** Strip device suffix and domain from a JID/LID for comparison */
-function bareId(jid: string): string {
-  return jid.split(':')[0].split('@')[0]
-}
-
 export function upsertGroupFromMetadata(meta: GroupMetadata, botJid: string, botLid?: string) {
   const db = getDb()
-  const botPhone = bareId(botJid)
-  const botLidBare = botLid ? bareId(botLid) : null
+  const botPhone = bareJid(botJid)
+  const botLidBare = botLid ? bareJid(botLid) : null
   const botParticipant = meta.participants.find(p => {
-    const pid = bareId(p.id)
+    const pid = bareJid(p.id)
     return pid === botPhone || (botLidBare && pid === botLidBare)
   })
 
