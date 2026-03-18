@@ -80,3 +80,14 @@ export const activityLog = sqliteTable('activity_log', {
 })
 
 export type ActivityLog = typeof activityLog.$inferSelect
+
+export const sessions = sqliteTable('sessions', {
+  token: text('token').primaryKey(),
+  userJid: text('user_jid').notNull(),
+  createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull().$defaultFn(() => new Date()),
+  activatedAt: integer('activated_at', { mode: 'timestamp_ms' }),
+  expiresAt: integer('expires_at', { mode: 'timestamp_ms' }).notNull(),
+  sessionData: text('session_data', { mode: 'json' }).$type<Record<string, unknown>>(),
+})
+
+export type Session = typeof sessions.$inferSelect

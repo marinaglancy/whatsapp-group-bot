@@ -11,6 +11,7 @@ import { dirname } from 'path'
 import { config } from '../config.js'
 import { logger } from '../utils/logger.js'
 import { registerAdminRoutes } from './routes/admin.js'
+import { registerDashboardRoutes } from './routes/dashboard.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const staticDir = resolve(__dirname, 'static')
@@ -33,6 +34,7 @@ export async function startWebServer() {
     cookie: {
       secure: false,
       httpOnly: true,
+      sameSite: 'lax',
       maxAge: 24 * 60 * 60 * 1000,
     },
     cookieName: 'bot_session',
@@ -43,8 +45,7 @@ export async function startWebServer() {
     prefix: '/',
   })
 
-  app.get('/', async (_req, reply) => sendPage(reply, 'index.html'))
-
+  registerDashboardRoutes(app)
   registerAdminRoutes(app)
 
   await app.listen({ port: config.port, host: config.host })

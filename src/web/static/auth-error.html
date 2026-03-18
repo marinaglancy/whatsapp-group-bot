@@ -22,21 +22,27 @@
       box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     }
     h1 { color: #1a1a1a; font-size: 1.5rem; margin-bottom: 0.5rem; }
-    p { color: #667781; }
-    .admin-link {
-      margin-top: 2rem;
-      padding-top: 1rem;
-      border-top: 1px solid #eee;
+    .error-box {
+      background: #fce4ec;
+      border: 1px solid #e57373;
+      border-radius: 8px;
+      padding: 1rem 1.5rem;
+      margin: 1rem 0;
     }
-    .admin-link a { color: #667781; font-size: 0.8rem; text-decoration: none; }
-    .admin-link a:hover { text-decoration: underline; }
+    .error-box p { color: #c62828; margin: 0.25rem 0; }
+    p { color: #667781; }
+    a { color: #25d366; text-decoration: none; }
+    a:hover { text-decoration: underline; }
   </style>
 </head>
 <body>
   <div class="container">
     <h1>{{PROJECT_NAME}}</h1>
-    <p>Send <strong>web</strong> to the bot to get access</p>
-    <div class="admin-link"><a href="/admin/">Admin panel</a></div>
+    <div class="error-box">
+      <p>Invalid or expired link.</p>
+      <p>Send <strong>web</strong> to the bot to get a new one.</p>
+    </div>
+    <p style="margin-top: 1.5rem;"><a href="/">Back to home</a></p>
   </div>
 </body>
 </html>

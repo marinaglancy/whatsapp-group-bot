@@ -2,6 +2,7 @@ import { mkdirSync } from 'fs'
 import { config } from './config.js'
 import { logger } from './utils/logger.js'
 import { initDb } from './db/index.js'
+import { cleanExpiredSessions } from './db/queries/sessions.js'
 import { startConnection } from './whatsapp/client.js'
 import { startWebServer } from './web/server.js'
 
@@ -13,6 +14,7 @@ async function main() {
 
   // Initialize database
   initDb()
+  cleanExpiredSessions()
 
   // Start web server first so QR page is available
   await startWebServer()

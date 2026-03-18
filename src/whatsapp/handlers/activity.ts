@@ -5,6 +5,7 @@ import { isGroupJid } from '../../utils/jid.js'
 import { logActivity } from '../../db/queries/activity.js'
 import { updateDisplayName, upsertUser } from '../../db/queries/users.js'
 import { cacheMessage, getCachedMessage, getSock } from '../client.js'
+import { handleCommand } from './commands.js'
 
 /** Convert a message to a JSON-safe object for debug logging.
  *  Replaces Uint8Array/Buffer with "[binary]" to keep it readable. */
@@ -40,7 +41,7 @@ function extractText(message: proto.IMessage): string | null {
   return null
 }
 
-export function handleMessagesUpsert(event: BaileysEventMap['messages.upsert']) {
+export async function handleMessagesUpsert(event: BaileysEventMap['messages.upsert']) {
   const { messages, type } = event
   if (type !== 'notify') return
 
@@ -63,6 +64,11 @@ export function handleMessagesUpsert(event: BaileysEventMap['messages.upsert']) 
       userJid = jidNormalizedUser(msg.key.participant)
       groupJid = remoteJid
     } else {
+      // DM: check for bot commands before logging
+      if (!msg.key.fromMe) {
+        const handled = await handleCommand(msg)
+        if (handled) continue
+      }
       // DM: remoteJid is the other user
       const botJid = jidNormalizedUser(getSock().user?.lid || getSock().user?.id || '')
       if (msg.key.fromMe) {

@@ -78,6 +78,17 @@ export function initDb() {
     CREATE INDEX IF NOT EXISTS idx_activity_message ON activity_log(message_id);
     CREATE INDEX IF NOT EXISTS idx_activity_parent ON activity_log(parent_id);
     CREATE INDEX IF NOT EXISTS idx_activity_to_user ON activity_log(to_user_jid);
+
+    CREATE TABLE IF NOT EXISTS sessions (
+      token TEXT PRIMARY KEY,
+      user_jid TEXT NOT NULL,
+      created_at INTEGER NOT NULL,
+      activated_at INTEGER,
+      expires_at INTEGER NOT NULL,
+      session_data TEXT
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions(user_jid);
   `)
 
   logger.info({ path: dbPath }, 'Database initialized')

@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{PROJECT_NAME}}</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      margin: 0;
+      background: #f0f2f5;
+    }
+    header {
+      background: white;
+      padding: 1rem 2rem;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    header h1 { font-size: 1.2rem; color: #1a1a1a; margin: 0; }
+    header nav { display: flex; gap: 1rem; align-items: center; }
+    header nav a { color: #667781; text-decoration: none; font-size: 0.85rem; }
+    header nav a:hover { text-decoration: underline; }
+    .content { max-width: 900px; margin: 2rem auto; padding: 0 1rem; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+    }
+    th, td { padding: 0.75rem 1rem; text-align: left; }
+    th { background: #f8f9fa; color: #667781; font-weight: 600; font-size: 0.85rem; }
+    td { border-top: 1px solid #eee; color: #1a1a1a; font-size: 0.9rem; }
+    .badge {
+      display: inline-block;
+      padding: 0.15rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .badge-community { background: #e8f5e9; color: #2e7d32; }
+    .badge-none { background: #fce4ec; color: #c62828; }
+    .badge-participant { background: #e3f2fd; color: #1565c0; }
+    .badge-admin { background: #fff3e0; color: #e65100; }
+    .badge-superadmin { background: #f3e5f5; color: #7b1fa2; }
+    .indent { padding-left: 2.5rem; }
+    .loading { text-align: center; padding: 2rem; color: #667781; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>{{PROJECT_NAME}}</h1>
+    <nav>
+      <form method="POST" action="/dashboard/logout" style="display:inline">
+        <button type="submit" style="background:none; border:none; color:#667781; font-size:0.85rem; cursor:pointer; text-decoration:underline;">Log out</button>
+      </form>
+    </nav>
+  </header>
+  <div class="content">
+    <h2 style="font-size: 1.1rem; color: #1a1a1a;">Groups</h2>
+    <div id="groups"><p class="loading">Loading...</p></div>
+  </div>
+  <script>
+    async function loadGroups() {
+      try {
+        const res = await fetch('/api/groups');
+        if (res.status === 401) {
+          window.location.href = '/';
+          return;
+        }
+        const data = await res.json();
+        const groups = data.groups || [];
+        if (groups.length === 0) {
+          document.getElementById('groups').innerHTML = '<p class="loading">No groups found</p>';
+          return;
+        }
+        // Organize: communities first with their children indented, then standalone groups
+        const communities = groups.filter(g => g.isCommunity);
+        const childMap = {};
+        for (const g of groups) {
+          if (g.parentCommunityJid) {
+            if (!childMap[g.parentCommunityJid]) childMap[g.parentCommunityJid] = [];
+            childMap[g.parentCommunityJid].push(g);
+          }
+        }
+        const standalone = groups.filter(g => !g.isCommunity && !g.parentCommunityJid);
+
+        let html = '<table><thead><tr><th>Name</th><th>Bot role</th></tr></thead><tbody>';
+
+        function addRow(g, indent) {
+          const name = (indent ? '<span class="indent">' : '') + escHtml(g.name)
+            + (g.isCommunity ? ' <span class="badge badge-community">community</span>' : '')
+            + (indent ? '</span>' : '');
+          const role = '<span class="badge badge-' + g.botMembership + '">' + g.botMembership + '</span>';
+          html += '<tr><td>' + name + '</td><td>' + role + '</td></tr>';
+        }
+
+        for (const c of communities) {
+          addRow(c, false);
+          for (const child of (childMap[c.jid] || [])) {
+            addRow(child, true);
+          }
+        }
+        for (const g of standalone) {
+          addRow(g, false);
+        }
+
+        html += '</tbody></table>';
+        document.getElementById('groups').innerHTML = html;
+      } catch (e) {
+        document.getElementById('groups').innerHTML = '<p class="loading">Failed to load groups</p>';
+      }
+    }
+    function escHtml(s) {
+      const d = document.createElement('div');
+      d.textContent = s;
+      return d.innerHTML;
+    }
+    loadGroups();
+  </script>
+</body>
+</html>
