@@ -20,22 +20,24 @@ export async function handleGroupsUpsert(groups: GroupUpsert[], sock: WASocket) 
     const authorPn = group.authorPn
     const authorLid = group.author
 
-    // Check if the author matches the admin phone
-    const addedByAdmin = config.adminPhone && (
+    // Check if the author is the bot itself, the admin, or someone else
+    const botPhone = phoneFromJid(botJid)
+    const isBotAuthor = (authorPn && phoneFromJid(authorPn) === botPhone) || (!authorLid && !authorPn)
+
+    const addedByAdmin = !isBotAuthor && config.adminPhone && (
       (authorPn && jidMatchesPhone(authorPn, config.adminPhone)) ||
       (authorLid && await isAdminLid(authorLid, group, config.adminPhone))
     )
 
-    const addedByItself = !authorLid && !authorPn
+    // Also check authorLid against admin when authorPn is the bot (WhatsApp sometimes sets authorPn to the added participant)
+    const adminViaLid = isBotAuthor && authorLid && config.adminPhone &&
+      await isAdminLid(authorLid, group, config.adminPhone)
 
-    if (addedByAdmin) {
-      logger.info({ groupJid: group.id, name: group.subject, author: authorPn || authorLid }, 'Bot added to group by admin — staying')
-      await fetchAndSyncGroup(group.id, sock)
-    } else if (addedByItself) {
-      logger.info({ groupJid: group.id, name: group.subject }, 'Bot added to group by itself — staying')
+    if (addedByAdmin || adminViaLid || isBotAuthor) {
+      logger.info({ groupJid: group.id, name: group.subject, authorPn, authorLid }, 'Bot added to group — staying')
       await fetchAndSyncGroup(group.id, sock)
     } else {
-      logger.warn({ groupJid: group.id, name: group.subject, author: authorPn || authorLid }, 'Bot added to group by non-admin — leaving')
+      logger.warn({ groupJid: group.id, name: group.subject, authorPn, authorLid }, 'Bot added to group by non-admin — leaving')
       try {
         await sock.groupLeave(group.id)
       } catch (err) {
