@@ -36,19 +36,21 @@
       overflow: hidden;
       box-shadow: 0 1px 4px rgba(0,0,0,0.1);
     }
-    th, td { padding: 0.75rem 1rem; text-align: left; }
+    th, td { padding: 0.35rem 0.75rem; text-align: left; }
     th {
       background: #f8f9fa; color: #667781; font-weight: 600; font-size: 0.85rem;
       cursor: pointer; user-select: none; white-space: nowrap;
     }
     th:hover { color: #1a1a1a; }
     th .sort-arrow { font-size: 0.7rem; margin-left: 0.25rem; }
-    td { border-top: 1px solid #eee; color: #1a1a1a; font-size: 0.9rem; }
+    td { border-top: 1px solid #eee; color: #1a1a1a; font-size: 0.85rem; line-height: 1.6; }
+    tr.even td { background: #f8f9fa; }
     td.num { text-align: right; font-variant-numeric: tabular-nums; }
     th.num { text-align: right; }
     .badge {
       display: inline-block;
-      padding: 0.15rem 0.5rem;
+      padding: 0 0.4rem;
+      vertical-align: baseline;
       border-radius: 4px;
       font-size: 0.75rem;
       font-weight: 600;
@@ -189,10 +191,13 @@
       }
       html += '</tr></thead><tbody>';
 
+      let rowIdx = 0;
       for (const m of pageMembers) {
         const isLeft = m.membership === 'none';
         const isInactive = m.total === 0;
-        const cls = (isLeft || isInactive) ? ' class="inactive"' : '';
+        const classes = [(isLeft || isInactive) ? 'inactive' : '', rowIdx % 2 === 1 ? 'even' : ''].filter(Boolean).join(' ');
+        const cls = classes ? ' class="' + classes + '"' : '';
+        rowIdx++;
 
         // Name + role badge
         const displayName = m.displayName || '~';
