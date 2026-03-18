@@ -22,6 +22,5 @@ COPY src/web/static ./dist/web/static
 ENV NODE_ENV=production
 ENV DATA_DIR=/app/data
 EXPOSE 3000
-VOLUME /app/data
 
 CMD ["node", "dist/index.js"]
