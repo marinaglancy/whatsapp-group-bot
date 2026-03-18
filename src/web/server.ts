@@ -21,6 +21,7 @@ export function sendPage(reply: FastifyReply, filename: string) {
   const html = readFileSync(resolve(staticDir, filename), 'utf-8')
     .replaceAll('{{PROJECT_NAME}}', config.projectName)
     .replaceAll('{{ADMIN_USERNAME}}', config.adminUsername)
+    .replaceAll('{{PAGE_SIZE}}', String(config.pageSize))
   return reply.type('text/html').send(html)
 }
 

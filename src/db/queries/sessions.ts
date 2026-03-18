@@ -42,7 +42,8 @@ export function getSession(token: string) {
 
   if (!session) return null
   if (!session.activatedAt) return null // not activated
-  if (session.expiresAt < new Date()) return null // expired
+  // expiresAt only gates token activation, not the session itself.
+  // Once activated, the session lives as long as the cookie (24h).
 
   return session
 }

@@ -1,9 +1,8 @@
-import { eq, and, notInArray } from 'drizzle-orm'
+import { eq, and, notInArray, inArray, sql } from 'drizzle-orm'
 import type { GroupParticipant } from 'baileys'
 import { getDb } from '../index.js'
 import { groupMembers, users, type MembershipLevel } from '../schema.js'
 import { upsertUser } from './users.js'
-import { bareJid } from '../../utils/jid.js'
 
 function membershipFromAdmin(admin: GroupParticipant['admin']): MembershipLevel {
   if (admin === 'superadmin') return 'superadmin'
@@ -42,21 +41,13 @@ export function upsertMembership(groupJid: string, userJid: string, membership: 
 export function syncGroupParticipants(
   groupJid: string,
   participants: GroupParticipant[],
-  botJid: string,
-  botLid?: string,
 ) {
   const db = getDb()
-  const botPhone = bareJid(botJid)
-  const botLidBare = botLid ? bareJid(botLid) : null
 
   const activeUserJids: string[] = []
 
   db.transaction(() => {
     for (const p of participants) {
-      const pid = bareJid(p.id)
-      // Skip bot's own entry
-      if (pid === botPhone || (botLidBare && pid === botLidBare)) continue
-
       upsertUser(p.id, {
         phoneNumber: p.phoneNumber || undefined,
         displayName: p.notify || undefined,
@@ -103,6 +94,30 @@ export function getGroupMembers(groupJid: string, opts?: { includeLeft?: boolean
     .innerJoin(users, eq(groupMembers.userJid, users.jid))
     .where(and(...conditions))
     .all()
+}
+
+/** Count active (non-'none') members per group */
+export function getGroupMemberCounts(groupJids: string[]): Map<string, number> {
+  const result = new Map<string, number>()
+  if (groupJids.length === 0) return result
+
+  const db = getDb()
+  const rows = db.select({
+    groupJid: groupMembers.groupJid,
+    cnt: sql<number>`count(*)`.as('cnt'),
+  })
+    .from(groupMembers)
+    .where(and(
+      inArray(groupMembers.groupJid, groupJids),
+      notInArray(groupMembers.membership, ['none']),
+    ))
+    .groupBy(groupMembers.groupJid)
+    .all()
+
+  for (const row of rows) {
+    result.set(row.groupJid, row.cnt)
+  }
+  return result
 }
 
 export function getGroupMember(groupJid: string, userJid: string) {

@@ -94,8 +94,8 @@ export async function handleMessagesUpsert(event: BaileysEventMap['messages.upse
     // Cache message for poll vote decryption
     cacheMessage(msg)
 
-    // Update display name from pushName (skip bot's own messages)
-    if (msg.pushName && userJid && !msg.key.fromMe) {
+    // Update display name from pushName
+    if (msg.pushName && userJid) {
       updateDisplayName(userJid, msg.pushName)
     }
 

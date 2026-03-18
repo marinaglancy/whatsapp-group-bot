@@ -17,7 +17,7 @@ export async function syncGroups(sock: WASocket) {
     const activeJids: string[] = []
     for (const meta of groupList) {
       upsertGroupFromMetadata(meta, botJid, botLid)
-      syncGroupParticipants(meta.id, meta.participants, botJid, botLid)
+      syncGroupParticipants(meta.id, meta.participants)
       activeJids.push(meta.id)
     }
 

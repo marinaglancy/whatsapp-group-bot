@@ -15,6 +15,7 @@ export const config = {
   adminUsername: process.env.ADMIN_USERNAME || 'admin',
   adminPassword: process.env.ADMIN_PASSWORD || '',
   sessionSecret: process.env.SESSION_SECRET || crypto.randomBytes(32).toString('hex'),
+  pageSize: parseInt(process.env.PAGE_SIZE || '50', 10),
   get baseUrl() {
     return process.env.BASE_URL || `http://localhost:${this.port}`
   },
