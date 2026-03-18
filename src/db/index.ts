@@ -89,6 +89,12 @@ export function initDb() {
     );
 
     CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions(user_jid);
+
+    CREATE TABLE IF NOT EXISTS settings (
+      key TEXT PRIMARY KEY,
+      value TEXT NOT NULL,
+      updated_at INTEGER NOT NULL
+    );
   `)
 
   logger.info({ path: dbPath }, 'Database initialized')

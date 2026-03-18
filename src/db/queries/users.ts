@@ -1,4 +1,4 @@
-import { eq, sql } from 'drizzle-orm'
+import { eq } from 'drizzle-orm'
 import { getDb } from '../index.js'
 import { users } from '../schema.js'
 import { bareJid } from '../../utils/jid.js'
@@ -53,6 +53,20 @@ export function updateDisplayName(jid: string, name: string) {
       updatedAt: now,
     },
   }).run()
+}
+
+export function userExists(jid: string): boolean {
+  const db = getDb()
+  return !!db.select({ jid: users.jid }).from(users).where(eq(users.jid, jid)).get()
+}
+
+export function updatePhoneNumber(jid: string, phoneJid: string) {
+  const db = getDb()
+  const phone = phoneDigits(phoneJid)
+  return db.update(users)
+    .set({ phoneNumber: phone, updatedAt: new Date() })
+    .where(eq(users.jid, jid))
+    .run()
 }
 
 export function getUser(jid: string) {

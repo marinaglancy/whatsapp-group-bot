@@ -9,7 +9,7 @@
     "url": "https://github.com/marinaglancy/whatsapp-group-bot"
   },
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && cp -r src/web/static dist/web/static",
     "dev": "tsx --env-file=.env src/index.ts",
     "start": "node --env-file=.env dist/index.js"
   },

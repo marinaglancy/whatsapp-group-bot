@@ -91,3 +91,9 @@ export const sessions = sqliteTable('sessions', {
 })
 
 export type Session = typeof sessions.$inferSelect
+
+export const settings = sqliteTable('settings', {
+  key: text('key').primaryKey(),
+  value: text('value').notNull(),
+  updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull().$defaultFn(() => new Date()),
+})

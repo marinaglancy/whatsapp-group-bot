@@ -1,28 +1,38 @@
 import type { Contact } from 'baileys'
-import { upsertUser } from '../../db/queries/users.js'
+import { updateDisplayName, updatePhoneNumber, userExists } from '../../db/queries/users.js'
 import { logger } from '../../utils/logger.js'
 
+/**
+ * Handle contacts.upsert / contacts.update events.
+ * Only update users who already exist in the DB (i.e. group members).
+ * Only use notify (self-set name), never contact.name (address book name).
+ */
 export function handleContactsUpsert(contacts: Contact[]) {
+  let updated = 0
   for (const contact of contacts) {
-    const name = contact.notify || contact.name || contact.verifiedName
-    upsertUser(contact.id, {
-      phoneNumber: contact.phoneNumber || undefined,
-      displayName: name || undefined,
-    })
+    if (!contact.id || !userExists(contact.id)) continue
+    if (contact.notify) {
+      updateDisplayName(contact.id, contact.notify)
+      updated++
+    }
+    if (contact.phoneNumber) {
+      updatePhoneNumber(contact.id, contact.phoneNumber)
+    }
   }
-  logger.debug({ count: contacts.length }, 'Contacts upserted')
+  logger.debug({ count: contacts.length, updated }, 'Contacts upserted (existing users only)')
 }
 
 export function handleContactsUpdate(contacts: Partial<Contact>[]) {
+  let updated = 0
   for (const contact of contacts) {
-    if (!contact.id) continue
-    const name = contact.notify || contact.name || contact.verifiedName
-    if (name || contact.phoneNumber) {
-      upsertUser(contact.id, {
-        phoneNumber: contact.phoneNumber || undefined,
-        displayName: name || undefined,
-      })
+    if (!contact.id || !userExists(contact.id)) continue
+    if (contact.notify) {
+      updateDisplayName(contact.id, contact.notify)
+      updated++
+    }
+    if (contact.phoneNumber) {
+      updatePhoneNumber(contact.id, contact.phoneNumber)
     }
   }
-  logger.debug({ count: contacts.length }, 'Contacts updated')
+  logger.debug({ count: contacts.length, updated }, 'Contacts updated (existing users only)')
 }

@@ -43,7 +43,8 @@
     <p id="bot-phone"></p>
     <div id="qr-img"></div>
     <div id="disconnect"><a href="#" onclick="disconnect(event)">Disconnect device</a></div>
-    <div style="margin-top: 2rem; padding-top: 1rem; border-top: 1px solid #eee;">
+    <div style="margin-top: 2rem; padding-top: 1rem; border-top: 1px solid #eee; display: flex; justify-content: center; gap: 1.5rem;">
+      <a href="/admin/settings" style="color:#667781; font-size:0.8rem; text-decoration:none;">Settings</a>
       <form method="POST" action="/admin/logout" style="display:inline">
         <button type="submit" style="background:none; border:none; color:#667781; font-size:0.8rem; cursor:pointer; text-decoration:underline;">Log out {{ADMIN_USERNAME}}</button>
       </form>

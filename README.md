@@ -34,13 +34,12 @@ npm run dev
 | `ADMIN_PHONE` | *(required)* | Admin phone with country code (e.g. `+1 234 567-8900`) |
 | `ADMIN_PASSWORD` | *(required)* | Password for admin panel at `/admin/` |
 | `ADMIN_USERNAME` | `admin` | Username for admin panel |
-| `PROJECT_NAME` | `WhatsApp Group Bot` | Displayed in page headers |
 | `PORT` | `3000` | Web server port |
 | `DATA_DIR` | `./data` | Directory for auth state and database |
-| `BASE_URL` | `http://localhost:PORT` | Public URL for login links |
-| `PAGE_SIZE` | `50` | Items per page in dashboard tables |
 | `LOG_LEVEL` | `info` | `debug`, `info`, `warn`, `error` |
 | `SESSION_SECRET` | *(auto-generated)* | Cookie signing secret |
+
+Additional settings (project name, page size, base URL) are stored in the database and auto-configured. The base URL is detected automatically when you first visit the admin panel.
 
 ## Tech Stack
 

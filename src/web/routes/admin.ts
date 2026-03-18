@@ -5,6 +5,7 @@ import { sendPage } from '../server.js'
 import { getCurrentQr, getConnectionState, getBotUser } from '../../whatsapp/handlers/connection.js'
 import { getSock } from '../../whatsapp/client.js'
 import { requireAuth, requireAuthApi } from '../middleware/auth.js'
+import { setSetting, getSettingOrDefault } from '../../db/queries/settings.js'
 
 export function registerAdminRoutes(app: FastifyInstance) {
   // --- Public: login page ---
@@ -35,8 +36,16 @@ export function registerAdminRoutes(app: FastifyInstance) {
     return reply.redirect('/admin/')
   })
 
-  app.get('/admin/', { preHandler: requireAuth }, async (_req, reply) => {
+  app.get('/admin/', { preHandler: requireAuth }, async (req, reply) => {
+    // Auto-detect base URL from every admin request (self-corrects if domain changes)
+    const proto = req.headers['x-forwarded-proto'] || req.protocol
+    const host = req.headers['x-forwarded-host'] || req.headers.host || req.hostname
+    setSetting('base_url', `${proto}://${host}`)
     return sendPage(reply, 'qr.html')
+  })
+
+  app.get('/admin/settings', { preHandler: requireAuth }, async (_req, reply) => {
+    return sendPage(reply, 'settings.html')
   })
 
   app.post('/admin/logout', { preHandler: requireAuth }, async (req, reply) => {
@@ -60,6 +69,29 @@ export function registerAdminRoutes(app: FastifyInstance) {
       state: state ?? 'connecting',
       user,
     })
+  })
+
+  app.get('/admin/api/settings', { preHandler: requireAuthApi }, async (_req, reply) => {
+    const defaults: Record<string, string> = {
+      project_name: 'WhatsApp Group Bot',
+      page_size: '50',
+    }
+    const result: Record<string, string> = {}
+    for (const [key, def] of Object.entries(defaults)) {
+      result[key] = getSettingOrDefault(key, def)
+    }
+    return reply.send(result)
+  })
+
+  app.post('/admin/api/settings', { preHandler: requireAuthApi }, async (req, reply) => {
+    const body = req.body as Record<string, string>
+    const allowed = ['project_name', 'page_size']
+    for (const key of allowed) {
+      if (key in body && typeof body[key] === 'string') {
+        setSetting(key, body[key])
+      }
+    }
+    return reply.send({ ok: true })
   })
 
   app.post('/admin/api/disconnect', { preHandler: requireAuthApi }, async (_req, reply) => {

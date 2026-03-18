@@ -10,13 +10,8 @@ export const config = {
   port: parseInt(process.env.PORT || '3000', 10),
   host: process.env.HOST || '0.0.0.0',
   logLevel: (process.env.LOG_LEVEL || 'info') as 'debug' | 'info' | 'warn' | 'error',
-  projectName: process.env.PROJECT_NAME || 'WhatsApp Group Bot',
   adminPhone: process.env.ADMIN_PHONE || '',
   adminUsername: process.env.ADMIN_USERNAME || 'admin',
   adminPassword: process.env.ADMIN_PASSWORD || '',
   sessionSecret: process.env.SESSION_SECRET || crypto.randomBytes(32).toString('hex'),
-  pageSize: parseInt(process.env.PAGE_SIZE || '50', 10),
-  get baseUrl() {
-    return process.env.BASE_URL || `http://localhost:${this.port}`
-  },
 }

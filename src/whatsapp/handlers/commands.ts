@@ -4,6 +4,7 @@ import { config } from '../../config.js'
 import { logger } from '../../utils/logger.js'
 import { jidMatchesPhone, phoneFromJid } from '../../utils/jid.js'
 import { createSession } from '../../db/queries/sessions.js'
+import { getSettingOrDefault } from '../../db/queries/settings.js'
 import { getSock } from '../client.js'
 
 /** Handle an incoming DM to the bot. Returns true if the message was handled as a command. */
@@ -34,7 +35,8 @@ async function handleWebCommand(msg: proto.IWebMessageInfo): Promise<boolean> {
 
   const senderJid = jidNormalizedUser(remoteJid)
   const token = createSession(senderJid)
-  const link = `${config.baseUrl}/auth?token=${token}`
+  const baseUrl = getSettingOrDefault('base_url', `http://localhost:${config.port}`)
+  const link = `${baseUrl}/auth?token=${token}`
 
   try {
     const sock = getSock()
