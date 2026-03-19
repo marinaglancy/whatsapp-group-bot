@@ -1,7 +1,6 @@
 import type { WASocket, GroupMetadata } from 'baileys'
-import { config } from '../../config.js'
 import { logger } from '../../utils/logger.js'
-import { jidMatchesPhone, phoneFromJid } from '../../utils/jid.js'
+import { phoneFromJid } from '../../utils/jid.js'
 import { upsertGroupFromMetadata } from '../../db/queries/groups.js'
 import { syncGroupParticipants } from '../../db/queries/members.js'
 
@@ -19,31 +18,9 @@ export async function handleGroupsUpsert(groups: GroupUpsert[], sock: WASocket) 
   for (const group of groups) {
     const authorPn = group.authorPn
     const authorLid = group.author
-
-    // Check if the author is the bot itself, the admin, or someone else
-    const botPhone = phoneFromJid(botJid)
-    const isBotAuthor = (authorPn && phoneFromJid(authorPn) === botPhone) || (!authorLid && !authorPn)
-
-    const addedByAdmin = !isBotAuthor && config.adminPhone && (
-      (authorPn && jidMatchesPhone(authorPn, config.adminPhone)) ||
-      (authorLid && await isAdminLid(authorLid, group, config.adminPhone))
-    )
-
-    // Also check authorLid against admin when authorPn is the bot (WhatsApp sometimes sets authorPn to the added participant)
-    const adminViaLid = isBotAuthor && authorLid && config.adminPhone &&
-      await isAdminLid(authorLid, group, config.adminPhone)
-
-    if (addedByAdmin || adminViaLid || isBotAuthor) {
-      logger.info({ groupJid: group.id, name: group.subject, authorPn, authorLid }, 'Bot added to group — staying')
-      await fetchAndSyncGroup(group.id, sock)
-    } else {
-      logger.warn({ groupJid: group.id, name: group.subject, authorPn, authorLid }, 'Bot added to group by non-admin — leaving')
-      try {
-        await sock.groupLeave(group.id)
-      } catch (err) {
-        logger.error({ groupJid: group.id, err }, 'Failed to leave group')
-      }
-    }
+    const authorPhone = authorPn ? phoneFromJid(authorPn) : null
+    logger.info({ groupJid: group.id, name: group.subject, authorPn, authorLid, authorPhone }, 'Bot added to group')
+    await fetchAndSyncGroup(group.id, sock)
   }
 }
 
@@ -62,13 +39,3 @@ async function fetchAndSyncGroup(groupJid: string, sock: WASocket) {
   }
 }
 
-async function isAdminLid(lid: string, group: GroupUpsert, adminPhone: string): Promise<boolean> {
-  const lidBare = lid.split(':')[0].split('@')[0]
-  const participant = group.participants?.find(
-    p => p.id.split(':')[0].split('@')[0] === lidBare
-  )
-  if (participant?.phoneNumber) {
-    return jidMatchesPhone(participant.phoneNumber, adminPhone)
-  }
-  return false
-}
