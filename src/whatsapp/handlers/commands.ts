@@ -24,7 +24,7 @@ async function handleWebCommand(msg: WAMessage): Promise<boolean> {
   if (!remoteJid) return false
 
   // Check if sender is the admin. In DMs remoteJid is the other user, but under LID
-  // addressing it is a LID — the phone number has to be resolved separately.
+  // addressing it is a LID, so the phone number has to be resolved separately.
   const senderPhoneJid = await resolvePhoneJid(
     msg.key.remoteJid,
     msg.key.remoteJidAlt,

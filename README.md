@@ -4,9 +4,9 @@ Self-hosted WhatsApp group management bot. Monitors group activity, tracks membe
 
 ## WhatsApp Account
 
-This bot uses [Baileys](https://github.com/WhiskeySockets/Baileys), an open-source library that connects to WhatsApp as a linked device. No WhatsApp Business account or API subscription is needed — a regular WhatsApp account works.
+This bot uses [Baileys](https://github.com/WhiskeySockets/Baileys), an open-source library that connects to WhatsApp as a linked device. No WhatsApp Business account or API subscription is needed. A regular WhatsApp account works.
 
-Get a separate phone number for the bot. WhatsApp supports two accounts on one phone — you can switch between your personal and bot accounts without needing a second device.
+Get a separate phone number for the bot. WhatsApp supports two accounts on one phone, so you can switch between your personal and bot accounts without needing a second device.
 
 ## Requirements
 
@@ -24,14 +24,14 @@ npm run dev
 
 1. Open `http://localhost:3000/admin/` and log in
 2. Scan the QR code with WhatsApp (Linked Devices > Link a Device)
-3. Add the bot to groups from the admin phone (`ADMIN_PHONE`) — if anyone else adds it, the bot will leave immediately
-4. DM **web** to the bot to get a dashboard login link
+3. Add the bot to a group. Anyone can add it, and it stays and starts tracking activity
+4. DM **web** to the bot from the admin phone (`ADMIN_PHONE`) to get a dashboard login link. DMs from any other number are ignored
 
 ## Environment Variables
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `ADMIN_PHONE` | *(required)* | Admin phone with country code (e.g. `+1 234 567-8900`) |
+| `ADMIN_PHONE` | *(required)* | Admin phone with country code (e.g. `+1 234 567-8900`). Only this number can use the **web** command |
 | `ADMIN_PASSWORD` | *(required)* | Password for admin panel at `/admin/` |
 | `ADMIN_USERNAME` | `admin` | Username for admin panel |
 | `PORT` | `3000` | Web server port |
