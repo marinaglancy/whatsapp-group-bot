@@ -1,3 +1,5 @@
+import { logger } from './logger.js'
+
 /**
  * Normalize a human-entered phone number to digits only.
  * Strips +, spaces, dashes, parentheses.
@@ -37,4 +39,31 @@ export function bareJid(jid: string): string {
 /** True if the JID uses LID addressing (e.g. "80428010631223@lid"). */
 export function isLidJid(jid: string): boolean {
   return jid.endsWith('@lid')
+}
+
+/**
+ * Resolve a phone-addressed JID from a possibly LID-addressed one.
+ *
+ * WhatsApp addresses users by LID and carries the phone JID in a companion field:
+ * remoteJidAlt on message keys, authorPn / participantPn on group events. When that
+ * companion field is absent, fall back to the Signal LID mapping store.
+ *
+ * `lookupPn` is injected so callers can be exercised without a live socket.
+ * Returns null if the phone-addressed JID cannot be determined.
+ */
+export async function resolvePhoneJid(
+  jid: string | null | undefined,
+  altJid: string | null | undefined,
+  lookupPn: (lid: string) => Promise<string | null>,
+): Promise<string | null> {
+  if (!jid) return null
+  if (altJid) return altJid
+  if (!isLidJid(jid)) return jid
+
+  try {
+    return await lookupPn(jid)
+  } catch (err) {
+    logger.warn({ err, jid }, 'Failed to resolve phone number for LID')
+    return null
+  }
 }
