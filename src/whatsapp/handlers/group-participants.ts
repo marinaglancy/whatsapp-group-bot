@@ -79,21 +79,13 @@ async function handleBotAdded(
   const addedByAdmin = !!authorPhoneJid && !!config.adminPhone
     && jidMatchesPhone(authorPhoneJid, config.adminPhone)
 
-  if (addedByAdmin) {
-    logger.info({ groupJid, author, authorPhoneJid }, 'Bot added to group by admin — staying')
-    try {
-      const meta = await sock.groupMetadata(groupJid)
-      upsertGroupFromMetadata(meta, botJid, sock.user?.lid)
-      logger.info({ groupJid, name: meta.subject }, 'Group saved to database')
-    } catch (err) {
-      logger.error({ groupJid, err }, 'Failed to fetch group metadata')
-    }
-  } else {
-    logger.warn({ groupJid, author, authorPhoneJid }, 'Bot added to group by non-admin — leaving')
-    try {
-      await sock.groupLeave(groupJid)
-    } catch (err) {
-      logger.error({ groupJid, err }, 'Failed to leave group')
-    }
+  logger.info({ groupJid, author, authorPhoneJid, addedByAdmin }, 'Bot added to group')
+
+  try {
+    const meta = await sock.groupMetadata(groupJid)
+    upsertGroupFromMetadata(meta, botJid, sock.user?.lid)
+    logger.info({ groupJid, name: meta.subject }, 'Group saved to database')
+  } catch (err) {
+    logger.error({ groupJid, err }, 'Failed to fetch group metadata')
   }
 }
