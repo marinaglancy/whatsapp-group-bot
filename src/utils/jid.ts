@@ -33,3 +33,8 @@ export function isGroupJid(jid: string): boolean {
 export function bareJid(jid: string): string {
   return jid.split(':')[0].split('@')[0]
 }
+
+/** True if the JID uses LID addressing (e.g. "80428010631223@lid"). */
+export function isLidJid(jid: string): boolean {
+  return jid.endsWith('@lid')
+}

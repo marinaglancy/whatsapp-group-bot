@@ -1,14 +1,14 @@
-import type { proto } from 'baileys'
+import type { WAMessage, WAMessageKey } from 'baileys'
 import { jidNormalizedUser } from 'baileys'
 import { config } from '../../config.js'
 import { logger } from '../../utils/logger.js'
-import { jidMatchesPhone, phoneFromJid } from '../../utils/jid.js'
+import { isLidJid, jidMatchesPhone } from '../../utils/jid.js'
 import { createSession } from '../../db/queries/sessions.js'
 import { getSettingOrDefault } from '../../db/queries/settings.js'
 import { getSock } from '../client.js'
 
 /** Handle an incoming DM to the bot. Returns true if the message was handled as a command. */
-export async function handleCommand(msg: proto.IWebMessageInfo): Promise<boolean> {
+export async function handleCommand(msg: WAMessage): Promise<boolean> {
   const text = extractPlainText(msg)?.trim().toLowerCase()
   if (!text) return false
 
@@ -19,17 +19,45 @@ export async function handleCommand(msg: proto.IWebMessageInfo): Promise<boolean
   return false
 }
 
-async function handleWebCommand(msg: proto.IWebMessageInfo): Promise<boolean> {
-  const remoteJid = msg.key?.remoteJid
+/**
+ * Resolve the sender's phone-addressed JID from a DM message key.
+ *
+ * WhatsApp addresses DMs by LID, so key.remoteJid is usually "<lid>@lid" and the
+ * phone JID is carried in key.remoteJidAlt. When a client omits remoteJidAlt, fall
+ * back to the Signal LID mapping store. Returns null if the phone can't be resolved.
+ *
+ * `lookupPn` is injected so this can be exercised without a live socket.
+ */
+export async function resolveSenderPhoneJid(
+  key: WAMessageKey,
+  lookupPn: (lid: string) => Promise<string | null>,
+): Promise<string | null> {
+  const remoteJid = key.remoteJid
+  if (!remoteJid) return null
+  if (key.remoteJidAlt) return key.remoteJidAlt
+  if (!isLidJid(remoteJid)) return remoteJid
+
+  try {
+    return await lookupPn(remoteJid)
+  } catch (err) {
+    logger.warn({ err, remoteJid }, 'Failed to resolve phone number for LID')
+    return null
+  }
+}
+
+async function handleWebCommand(msg: WAMessage): Promise<boolean> {
+  const remoteJid = msg.key.remoteJid
   if (!remoteJid) return false
 
-  // Check if sender is the admin
-  // In DMs, remoteJid is the other user's JID
-  // We need the phone number — could be remoteJid itself or participantAlt
-  const senderPhone = phoneFromJid(remoteJid)
+  // Check if sender is the admin. In DMs remoteJid is the other user, but under LID
+  // addressing it is a LID — the phone number has to be resolved separately.
+  const senderPhoneJid = await resolveSenderPhoneJid(
+    msg.key,
+    lid => getSock().signalRepository.lidMapping.getPNForLID(lid),
+  )
 
-  if (!config.adminPhone || !jidMatchesPhone(remoteJid, config.adminPhone)) {
-    logger.debug({ senderPhone }, 'Non-admin sent "web" command, ignoring')
+  if (!config.adminPhone || !senderPhoneJid || !jidMatchesPhone(senderPhoneJid, config.adminPhone)) {
+    logger.debug({ remoteJid, senderPhoneJid }, 'Non-admin sent "web" command, ignoring')
     return false
   }
 
@@ -51,7 +79,7 @@ async function handleWebCommand(msg: proto.IWebMessageInfo): Promise<boolean> {
   return true
 }
 
-function extractPlainText(msg: proto.IWebMessageInfo): string | null {
+function extractPlainText(msg: WAMessage): string | null {
   const m = msg.message
   if (!m) return null
   if (m.conversation) return m.conversation
